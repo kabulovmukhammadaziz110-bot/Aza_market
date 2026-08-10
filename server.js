@@ -86,7 +86,8 @@ async function updateSkinById(id, fields) {
 
 // Admin Auth Middleware
 function requireAdmin(req, res, next) {
-  if (!ADMIN_TOKEN || req.get("x-admin-token") !== ADMIN_TOKEN) {
+  const token = req.get("x-admin-token");
+  if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
     return res.status(401).json({ error: "Ruxsat etilmadi (invalid token)" });
   }
   next();
@@ -188,13 +189,11 @@ app.post("/webhook", async (req, res) => {
     const isConfirm = action === "confirm";
     const statusLabel = isConfirm ? "✅ TASDIQLANDI" : "❌ RAD ETILDI";
 
-    // Telegram do'stona bildirishnoma
     await tg("answerCallbackQuery", {
       callback_query_id: cb.id,
       text: isConfirm ? "To'lov tasdiqlandi!" : "Buyurtma rad etildi!",
     });
 
-    // Telegram xabarni yangilash (Tugmalarni holat matni bilan almashtirish)
     if (cb.message) {
       const origText = cb.message.text || "";
       await tg("editMessageText", {
