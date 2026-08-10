@@ -111,6 +111,20 @@ app.get("/api/skins", async (req, res) => {
 });
 
 app.post("/api/skins", requireAdmin, async (req, res) => {
+  if (Array.isArray(req.body)) {
+    try {
+      const added = [];
+      for (const item of req.body) {
+        if (item.weapon && item.name && item.price) {
+          added.push(await addSkin(item));
+        }
+      }
+      return res.json(added);
+    } catch(e) {
+      return res.status(500).json({ error: "Supabase xatosi", detail: String(e) });
+    }
+  }
+
   const { weapon, name, price } = req.body || {};
   if (!weapon || !name || !price) return res.status(400).json({ error: "weapon, name va price kiritilishi shart" });
   try {
