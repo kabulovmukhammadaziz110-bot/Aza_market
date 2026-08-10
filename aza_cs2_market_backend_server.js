@@ -14,11 +14,11 @@ app.use((req, res, next) => {
   next();
 });
 
-const BOT_TOKEN = process.env.BOT_TOKEN || "";
-const ADMIN_CHAT_ID = String(process.env.ADMIN_CHAT_ID || "");
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
-const SUPABASE_URL = process.env.SUPABASE_URL || "";
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
+const BOT_TOKEN = process.env.BOT_TOKEN || "8755812732:AAEPOaSL8ATcDhze9Zvzv1ggZ6r9VKmYvWs";
+const ADMIN_CHAT_ID = String(process.env.ADMIN_CHAT_ID || "8020387112");
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "Muh123$$$";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://hyaousowxnefdhpwttcw.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "sb_publishable_ooo7x36cmCAjezqJ_WW_IA_mS7QALGz";
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const CATEGORIES = ["rifle", "sniper", "pistol", "smg", "shotgun", "knife", "gloves", "agent"];
 const RARITIES = ["consumer", "milspec", "restricted", "classified", "covert", "gold"];
