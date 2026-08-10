@@ -84,11 +84,13 @@ async function updateSkinById(id, fields) {
   return updated[0];
 }
 
-// Admin Auth Middleware
+// Admin Auth Middleware (Header, Body yoki Query orqali parolni qabul qiladi va trim qiladi)
 function requireAdmin(req, res, next) {
-  const token = req.get("x-admin-token");
-  if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
-    return res.status(401).json({ error: "Ruxsat etilmadi (invalid token)" });
+  const token = req.get("x-admin-token") || (req.body && req.body.token) || (req.query && req.query.token);
+  const expectedToken = String(process.env.ADMIN_TOKEN || "Muh123$$$").trim();
+
+  if (!token || String(token).trim() !== expectedToken) {
+    return res.status(401).json({ ok: false, error: "Ruxsat etilmadi: Admin paroli noto'g'ri" });
   }
   next();
 }
