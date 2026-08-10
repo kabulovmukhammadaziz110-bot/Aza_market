@@ -55,12 +55,20 @@ async function addSkin(fields) {
     category: CATEGORIES.includes(fields.category) ? fields.category : "rifle",
     image: fields.image || "",
   };
-  const inserted = await sb("skins", {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify([row]),
-  });
-  return inserted[0];
+  try {
+    const inserted = await sb("skins", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify([row]),
+    });
+    if (Array.isArray(inserted) && inserted.length > 0) {
+      return inserted[0];
+    }
+    return { id: Date.now(), ...row };
+  } catch (e) {
+    console.error("Supabase addSkin error:", e);
+    throw new Error("Skin bazaga qo'shilmadi: " + (e.message || String(e)));
+  }
 }
 
 async function deleteSkinById(id) {
@@ -168,12 +176,35 @@ app.post("/webhook", async (req, res) => {
   if (body.callback_query) {
     const cb = body.callback_query;
     const [action, id] = (cb.data || "").split(":");
-    const order = orders.get(id);
-    if (order) order.status = action === "confirm" ? "confirmed" : "rejected";
+    let order = orders.get(id);
+    
+    if (!order) {
+      order = { id, status: action === "confirm" ? "confirmed" : "rejected" };
+      orders.set(id, order);
+    } else {
+      order.status = action === "confirm" ? "confirmed" : "rejected";
+    }
+
+    const isConfirm = action === "confirm";
+    const statusLabel = isConfirm ? "✅ TASDIQLANDI" : "❌ RAD ETILDI";
+
+    // Telegram do'stona bildirishnoma
     await tg("answerCallbackQuery", {
       callback_query_id: cb.id,
-      text: action === "confirm" ? "To'lov tasdiqlandi" : "Buyurtma rad etildi",
+      text: isConfirm ? "To'lov tasdiqlandi!" : "Buyurtma rad etildi!",
     });
+
+    // Telegram xabarni yangilash (Tugmalarni holat matni bilan almashtirish)
+    if (cb.message) {
+      const origText = cb.message.text || "";
+      await tg("editMessageText", {
+        chat_id: cb.message.chat.id,
+        message_id: cb.message.message_id,
+        text: `${origText}\n\n<b>Holat: ${statusLabel}</b>`,
+        parse_mode: "HTML",
+      });
+    }
+
     return res.sendStatus(200);
   }
 
