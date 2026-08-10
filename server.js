@@ -16,7 +16,7 @@ app.use((req, res, next) => {
 
 const BOT_TOKEN = process.env.BOT_TOKEN || "8755812732:AAEPOaSL8ATcDhze9Zvzv1ggZ6r9VKmYvWs";
 const ADMIN_CHAT_ID = String(process.env.ADMIN_CHAT_ID || "8020387112");
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "Muh123$$$";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "Salom2011";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://hyaousowxnefdhpwttcw.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "sb_publishable_ooo7x36cmCAjezqJ_WW_IA_mS7QALGz";
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
@@ -84,12 +84,13 @@ async function updateSkinById(id, fields) {
   return updated[0];
 }
 
-// Admin Auth Middleware (Header, Body yoki Query orqali parolni qabul qiladi va trim qiladi)
+// Admin Auth Middleware (Header, Body yoki Query orqali parolni qabul qiladi)
 function requireAdmin(req, res, next) {
   const token = req.get("x-admin-token") || (req.body && req.body.token) || (req.query && req.query.token);
-  const expectedToken = String(process.env.ADMIN_TOKEN || "Muh123$$$").trim();
+  const expectedToken = String(process.env.ADMIN_TOKEN || "Salom2011").trim();
+  const inputToken = token ? String(token).trim() : "";
 
-  if (!token || String(token).trim() !== expectedToken) {
+  if (!inputToken || inputToken !== expectedToken) {
     return res.status(401).json({ ok: false, error: "Ruxsat etilmadi: Admin paroli noto'g'ri" });
   }
   next();
@@ -180,7 +181,6 @@ let lastList = [];
 app.post("/webhook", async (req, res) => {
   const body = req.body || {};
 
-  // Inline knopkalar bosilganda (To'lovni tasdiqlash/rad etish)
   if (body.callback_query) {
     const cb = body.callback_query;
     const [action, id] = (cb.data || "").split(":");
@@ -223,7 +223,6 @@ app.post("/webhook", async (req, res) => {
   }
 
   try {
-    // Step-by-step Skin qo'shish jarayoni
     if (addFlow) {
       if (text === "/bekor") {
         addFlow = null;
@@ -278,7 +277,6 @@ app.post("/webhook", async (req, res) => {
       }
     }
 
-    // Buyruqlar
     if (text === "/start") {
       await send("Salom! AZA Market Admin boti.\n\nBuyruqlar:\n/qoshish — Yangi skin qo'shish\n/royxat — Barcha skinlarni ko'rish\n/ochirish N — N-o'rindagi skinni o'chirish\n/rasm N <link> — Skin rasmini yangilash\n/bekor — Amalni bekor qilish");
     } else if (text === "/qoshish") {
