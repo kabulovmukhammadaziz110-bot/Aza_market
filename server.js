@@ -261,7 +261,7 @@ app.post("/webhook", async (req, res) => {
       if (addFlow.step === "wear") {
         addFlow.wear = text;
         addFlow.step = "price";
-        await send("Narxini yozing (masalan: $42.30):");
+        await send("Narxini yozing (masalan: $42.30 yoki 3000):");
         return res.sendStatus(200);
       }
       if (addFlow.step === "price") {
@@ -281,7 +281,7 @@ app.post("/webhook", async (req, res) => {
         addFlow.image = imgUrl;
 
         const created = await addSkin(addFlow);
-        await send(`✅ Yangi skin bazaga qo'shildi!\n\nID: ${created.id}\nSkin: ${created.weapon} | ${created.name}\nNarxi: ${created.price}`);
+        await send(`✅ Yangi skin bazaga qo'shildi!\n\nID: ${created.id}\nSkin: ${created.weapon} | ${created.name} (${created.wear})\nNarxi: ${created.price}`);
         addFlow = null;
         return res.sendStatus(200);
       }
@@ -298,7 +298,7 @@ app.post("/webhook", async (req, res) => {
       if (!skins.length) {
         await send("Market xozircha bo'sh.");
       } else {
-        const lines = skins.map((s, i) => `${i + 1}. ${s.weapon} | ${s.name} — ${s.price} [${s.rarity}]`);
+        const lines = skins.map((s, i) => `${i + 1}. ${s.weapon} | ${s.name} [${s.wear}] — ${s.price}`);
         await send("Joriy skinlar ro'yxati:\n\n" + lines.join("\n") + "\n\nO'chirish uchun: /ochirish <tartib_raqam>");
       }
     } else if (text.startsWith("/ochirish")) {
