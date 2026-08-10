@@ -84,7 +84,7 @@ async function updateSkinById(id, fields) {
   return updated[0];
 }
 
-// Admin Auth Middleware (Header, Body yoki Query orqali parolni qabul qiladi)
+// Admin Auth Middleware
 function requireAdmin(req, res, next) {
   const token = req.get("x-admin-token") || (req.body && req.body.token) || (req.query && req.query.token);
   const expectedToken = String(process.env.ADMIN_TOKEN || "Salom2011").trim();
@@ -151,7 +151,7 @@ async function tg(method, payload) {
 }
 
 app.post("/api/order", async (req, res) => {
-  const { product, price, tradeUrl, telegramUsername, telegramId, pubgId } = req.body || {};
+  const { product, price, tradeUrl, telegramUsername, telegramId, pubgId, fcAccount } = req.body || {};
   if (!product || !price) return res.status(400).json({ error: "product va price shart" });
 
   const id = String(nextOrderId++);
@@ -160,8 +160,9 @@ app.post("/api/order", async (req, res) => {
   let deliveryLines = "";
   if (tradeUrl) deliveryLines += `\nSteam Trade URL: ${tradeUrl}`;
   if (telegramUsername) deliveryLines += `\nTelegram (Premium): ${telegramUsername}`;
-  if (telegramId) deliveryLines += `\nTelegram (Stars): ${telegramId}`;
+  if (telegramId) deliveryLines += `\nTelegram ID / Nik: ${telegramId}`;
   if (pubgId) deliveryLines += `\nPUBG Player ID: ${pubgId}`;
+  if (fcAccount) deliveryLines += `\nEA / FC Akkaunt (Login & Parol / ID): ${fcAccount}`;
 
   await tg("sendMessage", {
     chat_id: ADMIN_CHAT_ID,
