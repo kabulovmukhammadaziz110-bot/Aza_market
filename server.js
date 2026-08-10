@@ -120,6 +120,15 @@ app.post("/api/skins", requireAdmin, async (req, res) => {
   }
 });
 
+app.put("/api/skins/:id", requireAdmin, async (req, res) => {
+  try {
+    const updated = await updateSkinById(req.params.id, req.body);
+    res.json({ ok: true, updated });
+  } catch (e) {
+    res.status(500).json({ error: "Supabase xatosi", detail: String(e) });
+  }
+});
+
 app.delete("/api/skins/:id", requireAdmin, async (req, res) => {
   try {
     await deleteSkinById(req.params.id);
