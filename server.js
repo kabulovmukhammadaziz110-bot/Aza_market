@@ -93,6 +93,11 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// Admin Token tekshirish yo'lagi
+app.post("/api/admin/verify", requireAdmin, (req, res) => {
+  res.json({ ok: true, message: "Admin autentifikatsiyasi muvaffaqiyatli" });
+});
+
 // Skin Endpoints
 app.get("/api/skins", async (req, res) => {
   try {
