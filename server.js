@@ -5,7 +5,7 @@ const fetch = require("node-fetch");
 const app = express();
 app.use(express.json());
 
-// CORS - Barcha frontend va Netlify havolalaridan sorovlarga ruxsat beradi
+// CORS - Barcha frontend so'rovlariga ruxsat beradi
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type, x-admin-token");
@@ -20,7 +20,9 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "Salom2011";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://hyaousowxnefdhpwttcw.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "sb_publishable_ooo7x36cmCAjezqJ_WW_IA_mS7QALGz";
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const CATEGORIES = ["rifle", "sniper", "pistol", "smg", "shotgun", "knife", "gloves", "agent"];
+
+// Yangi bo'limlar: case, music, zeus kiritildi
+const CATEGORIES = ["rifle", "sniper", "pistol", "smg", "shotgun", "knife", "gloves", "agent", "case", "music", "zeus"];
 const RARITIES = ["consumer", "milspec", "restricted", "classified", "covert", "gold"];
 
 // Supabase REST Helper
@@ -67,7 +69,7 @@ async function addSkin(fields) {
     return { id: Date.now(), ...row };
   } catch (e) {
     console.error("Supabase addSkin error:", e);
-    throw new Error("Skin bazaga qo'shilmadi: " + (e.message || String(e)));
+    throw new Error("Buyum bazaga qo'shilmadi: " + (e.message || String(e)));
   }
 }
 
@@ -96,7 +98,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Admin Token tekshirish yo'lagi
 app.post("/api/admin/verify", requireAdmin, (req, res) => {
   res.json({ ok: true, message: "Admin autentifikatsiyasi muvaffaqiyatli" });
 });
@@ -198,7 +199,7 @@ app.get("/api/order/:id", (req, res) => {
   res.json(order);
 });
 
-// Telegram Bot Webhook & Step-by-Step Skin Add Flow
+// Telegram Bot Webhook
 let addFlow = null;
 let lastList = [];
 
@@ -250,14 +251,14 @@ app.post("/webhook", async (req, res) => {
     if (addFlow) {
       if (text === "/bekor") {
         addFlow = null;
-        await send("Skin qo'shish bekor qilindi.");
+        await send("Qo'shish bekor qilindi.");
         return res.sendStatus(200);
       }
 
       if (addFlow.step === "weapon") {
         addFlow.weapon = text;
         addFlow.step = "name";
-        await send("Skin nomini yozing (masalan: Redline):");
+        await send("Nomi yoki turini yozing (masalan: Redline, Dreams Case, The Verkkars):");
         return res.sendStatus(200);
       }
       if (addFlow.step === "name") {
@@ -269,7 +270,7 @@ app.post("/webhook", async (req, res) => {
       if (addFlow.step === "rarity") {
         addFlow.rarity = RARITIES.includes(text.toLowerCase()) ? text.toLowerCase() : "consumer";
         addFlow.step = "wear";
-        await send("Holatini yozing:\n(Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred)");
+        await send("Holatini yozing:\n(Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred, Standard)");
         return res.sendStatus(200);
       }
       if (addFlow.step === "wear") {
@@ -281,13 +282,13 @@ app.post("/webhook", async (req, res) => {
       if (addFlow.step === "price") {
         addFlow.price = text;
         addFlow.step = "category";
-        await send("Kategoriyasini yozing:\n(rifle, sniper, pistol, smg, shotgun, knife, gloves, agent)");
+        await send("Kategoriyasini yozing:\n(rifle, sniper, pistol, smg, shotgun, knife, gloves, agent, case, music, zeus)");
         return res.sendStatus(200);
       }
       if (addFlow.step === "category") {
         addFlow.category = CATEGORIES.includes(text.toLowerCase()) ? text.toLowerCase() : "rifle";
         addFlow.step = "image";
-        await send("Rasm URL havolasini yozing (Agar rasm bo'lmasa 'yoq' deb yozing):");
+        await send("Rasm URL havolasini yozing (Yo'q bo'lsa 'yoq' deb yozing):");
         return res.sendStatus(200);
       }
       if (addFlow.step === "image") {
@@ -295,17 +296,17 @@ app.post("/webhook", async (req, res) => {
         addFlow.image = imgUrl;
 
         const created = await addSkin(addFlow);
-        await send(`✅ Yangi skin bazaga qo'shildi!\n\nID: ${created.id}\nSkin: ${created.weapon} | ${created.name}\nNarxi: ${created.price}`);
+        await send(`✅ Yangi buyum bazaga qo'shildi!\n\nID: ${created.id}\nBuyum: ${created.weapon} | ${created.name}\nNarxi: ${created.price}`);
         addFlow = null;
         return res.sendStatus(200);
       }
     }
 
     if (text === "/start") {
-      await send("Salom! AZA Market Admin boti.\n\nBuyruqlar:\n/qoshish — Yangi skin qo'shish\n/royxat — Barcha skinlarni ko'rish\n/ochirish N — N-o'rindagi skinni o'chirish\n/rasm N <link> — Skin rasmini yangilash\n/bekor — Amalni bekor qilish");
+      await send("Salom! AZA Market Admin boti.\n\nBuyruqlar:\n/qoshish — Yangi buyum qo'shish\n/royxat — Barcha buyumlarni ko'rish\n/ochirish N — N-o'rindagi buyumni o'chirish\n/rasm N <link> — Rasmilari yangilash\n/bekor — Amalni bekor qilish");
     } else if (text === "/qoshish") {
       addFlow = { step: "weapon" };
-      await send("Yangi skin qo'shish boshlandi.\nQurol nomini yozing (masalan: AK-47):");
+      await send("Yangi buyum qo'shish boshlandi.\nTurini yozing (masalan: AK-47, Case, Music Kit, Zeus):");
     } else if (text === "/royxat") {
       const skins = await getSkins();
       lastList = skins.map(s => s.id);
@@ -313,7 +314,7 @@ app.post("/webhook", async (req, res) => {
         await send("Market xozircha bo'sh.");
       } else {
         const lines = skins.map((s, i) => `${i + 1}. ${s.weapon} | ${s.name} — ${s.price} [${s.rarity}]`);
-        await send("Joriy skinlar ro'yxati:\n\n" + lines.join("\n") + "\n\nO'chirish uchun: /ochirish <tartib_raqam>");
+        await send("Joriy buyumlar ro'yxati:\n\n" + lines.join("\n") + "\n\nO'chirish uchun: /ochirish <tartib_raqam>");
       }
     } else if (text.startsWith("/ochirish")) {
       const n = parseInt(text.split(" ")[1], 10);
