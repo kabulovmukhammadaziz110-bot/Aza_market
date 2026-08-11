@@ -21,7 +21,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://hyaousowxnefdhpwttcw.s
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "sb_publishable_ooo7x36cmCAjezqJ_WW_IA_mS7QALGz";
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-// Yangi bo'limlar: case, music, zeus kiritildi
+// Barcha kategoriyalar (Shu jumladan Case, Music Kit, Zeus)
 const CATEGORIES = ["rifle", "sniper", "pistol", "smg", "shotgun", "knife", "gloves", "agent", "case", "music", "zeus"];
 const RARITIES = ["consumer", "milspec", "restricted", "classified", "covert", "gold"];
 
@@ -153,7 +153,7 @@ app.delete("/api/skins/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// Orders Store
+// Buyurtmalar Store (Orders)
 const orders = new Map();
 let nextOrderId = 1;
 
@@ -165,6 +165,7 @@ async function tg(method, payload) {
   }).then(r => r.json());
 }
 
+// Savat va yagona xaridlardan kelgan buyurtmalarni qabul qilish
 app.post("/api/order", async (req, res) => {
   const { product, price, tradeUrl, telegramUsername, telegramId, pubgId, fcAccount } = req.body || {};
   if (!product || !price) return res.status(400).json({ error: "product va price shart" });
@@ -173,15 +174,17 @@ app.post("/api/order", async (req, res) => {
   orders.set(id, { id, product, price, status: "pending" });
 
   let deliveryLines = "";
-  if (tradeUrl) deliveryLines += `\nSteam Trade URL: ${tradeUrl}`;
-  if (telegramUsername) deliveryLines += `\nTelegram (Premium): ${telegramUsername}`;
-  if (telegramId) deliveryLines += `\nTelegram ID / Nik: ${telegramId}`;
-  if (pubgId) deliveryLines += `\nPUBG Player ID: ${pubgId}`;
-  if (fcAccount) deliveryLines += `\nEA / FC Akkaunt (Login & Parol / ID): ${fcAccount}`;
+  if (tradeUrl) deliveryLines += `\n📦 Steam Trade URL: ${tradeUrl}`;
+  if (telegramUsername) deliveryLines += `\n✦ Telegram (Premium): ${telegramUsername}`;
+  if (telegramId) deliveryLines += `\n⭐ Telegram ID / Nik: ${telegramId}`;
+  if (pubgId) deliveryLines += `\n🪙 PUBG Player ID: ${pubgId}`;
+  if (fcAccount) deliveryLines += `\n⚽ EA / FC Akkaunt (Login & Parol / ID): ${fcAccount}`;
 
+  // Admin Telegram Botiga bildirishnoma yuborish
   await tg("sendMessage", {
     chat_id: ADMIN_CHAT_ID,
-    text: `🆕 Yangi buyurtma #${id}\nMahsulot: ${product}\nNarxi: ${price}${deliveryLines}\n\nXaridor to'lov qilganini tasdiqladi. To'lovni tekshiring:`,
+    text: `🆕 <b>YANGI BUYURTMA #${id}</b>\n\n<b>Mahsulot(lar):</b>\n${product}\n\n<b>Jami Narxi:</b> ${price}${deliveryLines}\n\nXaridor to'lov qilganini tasdiqladi. To'lovni tekshiring:`,
+    parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [[
         { text: "✅ Tasdiqlash", callback_data: `confirm:${id}` },
@@ -199,7 +202,7 @@ app.get("/api/order/:id", (req, res) => {
   res.json(order);
 });
 
-// Telegram Bot Webhook
+// Telegram Bot Webhook (Admin Boti uchun)
 let addFlow = null;
 let lastList = [];
 
@@ -303,10 +306,10 @@ app.post("/webhook", async (req, res) => {
     }
 
     if (text === "/start") {
-      await send("Salom! AZA Market Admin boti.\n\nBuyruqlar:\n/qoshish — Yangi buyum qo'shish\n/royxat — Barcha buyumlarni ko'rish\n/ochirish N — N-o'rindagi buyumni o'chirish\n/rasm N <link> — Rasmilari yangilash\n/bekor — Amalni bekor qilish");
+      await send("Salom! AZA Market Admin boti.\n\nBuyruqlar:\n/qoshish — Yangi buyum qo'shish\n/royxat — Barcha buyumlarni ko'rish\n/ochirish N — N-o'rindagi buyumni o'chirish\n/rasm N <link> — Rasmini yangilash\n/bekor — Amalni bekor qilish");
     } else if (text === "/qoshish") {
       addFlow = { step: "weapon" };
-      await send("Yangi buyum qo'shish boshlandi.\nTurini yozing (masalan: AK-47, Case, Music Kit, Zeus):");
+      await send("Yangi buyum qo'shish boshlandi.\nTurini yozing (masalan: AK-47, Glock-18, Case, Music Kit, Zeus):");
     } else if (text === "/royxat") {
       const skins = await getSkins();
       lastList = skins.map(s => s.id);
