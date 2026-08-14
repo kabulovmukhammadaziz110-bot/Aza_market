@@ -23,11 +23,13 @@ const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || "https://aza-market.onrender.com";
 
 // ==========================================
-// TELEGRAM RASMLARINING FILE_ID RO'YXATI
-// (2-qadamda bot bergan kodlarni shu yerga qo'yasiz)
+// SIZNING 4 TA ISBOT RASMINGIZ (FILE_ID)
 // ==========================================
 const ISBOT_PHOTOS = [
-  // Masalan: "AgACAgIAAxkBAA...",
+  "AgACAgIAAxkBAAPNan9KsOIiPxGxw2QlGfuQk5bPMYYAArsXaxuf7QFIdIOuUJ8AAXtAAQADAgADeQADPQQ",
+  "AgACAgIAAxkBAAPMan9KsN0jXuHkZhKm0sQhn15hhrIAAroXaxuf7QFI6YNGWC2IbgsBAAMCAAN5AAM9BA",
+  "AgACAgIAAxkBAAPLan9KsF_nOL5RbIgK98tTWiPcpY8AArgXaxuf7QFItEsmLQNibYABAAMCAAN5AAM9BA",
+  "AgACAgIAAxkBAAPKan9KsIh9KRTVxtEg1zuR68Cfg-MAArkXaxuf7QFI8WdlNZFvTYsBAAMCAAN5AAM9BA"
 ];
 
 const ISBOT_CAPTION = `Fc point haridorlarimizning sharhlari‼️\nUzbdagi eng arzo narx✅\nBizda aldov yoq‼️\nBuyurtmalar vaqtida olinib oz vaqtida egasiga boradi‼️`;
@@ -187,36 +189,33 @@ app.post("/webhook", async (req, res) => {
   const chatId = msg.chat.id;
   const text = (msg.text || "").trim();
 
-  // 1. ADMIN BOTGA RASM YUBORSA -> BOT UNGA FILE_ID KODINI BERADI
+  // Admin yangi rasm tashlasa file_id berish
   if (String(chatId) === ADMIN_CHAT_ID && msg.photo && msg.photo.length > 0) {
     const largestPhoto = msg.photo[msg.photo.length - 1];
     await tg("sendMessage", {
       chat_id: ADMIN_CHAT_ID,
-      text: `📸 <b>Rasmning FILE_ID kodi:</b>\n\n<code>${largestPhoto.file_id}</code>\n\n(Ustiga bossangiz nusxalanadi, uni ISBOT_PHOTOS ro'yxatiga qo'ying)`,
+      text: `📸 <b>Rasmning FILE_ID kodi:</b>\n\n<code>${largestPhoto.file_id}</code>`,
       parse_mode: "HTML",
     });
     return res.sendStatus(200);
   }
 
-  // 2. /isbot BUYRUG'I
+  // /isbot BUYRUG'I
   if (text === "/isbot") {
-    if (ISBOT_PHOTOS.length > 0) {
-      const mediaGroup = ISBOT_PHOTOS.map((fileId, index) => ({
-        type: "photo",
-        media: fileId,
-        caption: index === 0 ? ISBOT_CAPTION : undefined,
-      }));
-      await tg("sendMediaGroup", { chat_id: chatId, media: mediaGroup });
-    } else {
-      await tg("sendMessage", {
-        chat_id: chatId,
-        text: ISBOT_CAPTION,
-      });
-    }
+    const mediaGroup = ISBOT_PHOTOS.map((fileId, index) => ({
+      type: "photo",
+      media: fileId,
+      caption: index === 0 ? ISBOT_CAPTION : undefined,
+    }));
+
+    await tg("sendMediaGroup", {
+      chat_id: chatId,
+      media: mediaGroup,
+    });
     return res.sendStatus(200);
   }
 
-  // 3. ODDIY FOYDALANUVCHILAR
+  // ODDIY FOYDALANUVCHILAR
   if (String(chatId) !== ADMIN_CHAT_ID) {
     if (text === "/start") {
       await tg("sendMessage", { chat_id: chatId, text: "Assalomu alaykum! Isbotlarni ko'rish uchun /isbot buyrug'ini yozing." });
@@ -224,9 +223,9 @@ app.post("/webhook", async (req, res) => {
     return res.sendStatus(200);
   }
 
-  // 4. ADMIN BUYRUQLARI
+  // ADMIN BUYRUQLARI
   if (text === "/start") {
-    await tg("sendMessage", { chat_id: ADMIN_CHAT_ID, text: "Salom Admin!\n\n/qoshish — Buyum qo'shish\n/royxat — Barcha buyumlar\n\n<i>Eslatma: Botga istalgan rasmni yuborsangiz, u sizga uning file_id kodini beradi.</i>", parse_mode: "HTML" });
+    await tg("sendMessage", { chat_id: ADMIN_CHAT_ID, text: "Salom Admin!\n\n/qoshish — Buyum qo'shish\n/royxat — Barcha buyumlar", parse_mode: "HTML" });
   }
 
   res.sendStatus(200);
