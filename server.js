@@ -21,7 +21,17 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://hyaousowxnefdhpwttcw.s
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "sb_publishable_ooo7x36cmCAjezqJ_WW_IA_mS7QALGz";
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-// Barcha kategoriyalar (Shu jumladan Case, Music Kit, Zeus)
+// Isbot rasmlari va matni
+const ISBOT_PHOTOS = [
+  "https://i.postimg.cc/QHd40sqp/isbot1.jpg",
+  "https://i.postimg.cc/CzxPmY4G/isbot2.jpg",
+  "https://i.postimg.cc/CzxPmY4C/isbot3.jpg",
+  "https://i.postimg.cc/crL9XZcM/isbot4.jpg",
+];
+
+const ISBOT_CAPTION = `Fc point haridorlarimizning sharhlari‼️\nUzbdagi eng arzo narx✅\nBizda aldov yoq‼️\nBuyurtmalar vaqtida olinib oz vaqtida egasiga boradi‼️`;
+
+// Barcha kategoriyalar
 const CATEGORIES = ["rifle", "sniper", "pistol", "smg", "shotgun", "knife", "gloves", "agent", "case", "music", "zeus"];
 const RARITIES = ["consumer", "milspec", "restricted", "classified", "covert", "gold"];
 
@@ -202,13 +212,14 @@ app.get("/api/order/:id", (req, res) => {
   res.json(order);
 });
 
-// Telegram Bot Webhook (Admin Boti uchun)
+// Telegram Bot Webhook
 let addFlow = null;
 let lastList = [];
 
 app.post("/webhook", async (req, res) => {
   const body = req.body || {};
 
+  // 1. Tugmalar (Callback Query)
   if (body.callback_query) {
     const cb = body.callback_query;
     const [action, id] = (cb.data || "").split(":");
@@ -243,8 +254,36 @@ app.post("/webhook", async (req, res) => {
   }
 
   const msg = body.message;
-  if (!msg || String(msg.chat.id) !== ADMIN_CHAT_ID) return res.sendStatus(200);
+  if (!msg) return res.sendStatus(200);
+
+  const chatId = msg.chat.id;
   const text = (msg.text || "").trim();
+
+  // 2. FOYDALANUVCHILAR UCHUN: /isbot buyrug'i
+  if (text === "/isbot") {
+    try {
+      const mediaGroup = ISBOT_PHOTOS.map((url, index) => ({
+        type: "photo",
+        media: url,
+        caption: index === 0 ? ISBOT_CAPTION : undefined,
+      }));
+
+      await tg("sendMediaGroup", {
+        chat_id: chatId,
+        media: mediaGroup,
+      });
+    } catch (e) {
+      console.error("Isbot yuborishda xatolik:", e);
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: "Rasmlarni yuklashda xatolik yuz berdi.",
+      });
+    }
+    return res.sendStatus(200);
+  }
+
+  // 3. ADMIN UCHUN TEKSHIRUV
+  if (String(chatId) !== ADMIN_CHAT_ID) return res.sendStatus(200);
 
   async function send(t) {
     await tg("sendMessage", { chat_id: ADMIN_CHAT_ID, text: t });
