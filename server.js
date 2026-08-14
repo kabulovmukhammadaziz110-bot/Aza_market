@@ -21,6 +21,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://hyaousowxnefdhpwttcw.s
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || "sb_publishable_ooo7x36cmCAjezqJ_WW_IA_mS7QALGz";
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
+// Sizning Render havolangiz (Avtomatik webhook uchun)
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || "https://aza-market.onrender.com";
+
 // Isbot rasmlari va matni
 const ISBOT_PHOTOS = [
   "https://i.postimg.cc/QHd40sqp/isbot1.jpg",
@@ -31,9 +34,27 @@ const ISBOT_PHOTOS = [
 
 const ISBOT_CAPTION = `Fc point haridorlarimizning sharhlari‼️\nUzbdagi eng arzo narx✅\nBizda aldov yoq‼️\nBuyurtmalar vaqtida olinib oz vaqtida egasiga boradi‼️`;
 
-// Barcha kategoriyalar
 const CATEGORIES = ["rifle", "sniper", "pistol", "smg", "shotgun", "knife", "gloves", "agent", "case", "music", "zeus"];
 const RARITIES = ["consumer", "milspec", "restricted", "classified", "covert", "gold"];
+
+// Telegram Helper (Xatoliklarni aniq ko'rsatadi)
+async function tg(method, payload) {
+  try {
+    const res = await fetch(`${TG_API}/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error(`Telegram API xatosi [${method}]:`, data.description);
+    }
+    return data;
+  } catch (err) {
+    console.error(`Fetch xatosi [${method}]:`, err.message);
+    return null;
+  }
+}
 
 // Supabase REST Helper
 async function sb(path, options = {}) {
@@ -96,7 +117,6 @@ async function updateSkinById(id, fields) {
   return updated[0];
 }
 
-// Admin Auth Middleware
 function requireAdmin(req, res, next) {
   const token = req.get("x-admin-token") || (req.body && req.body.token) || (req.query && req.query.token);
   const expectedToken = String(process.env.ADMIN_TOKEN || "Salom2011").trim();
@@ -112,7 +132,6 @@ app.post("/api/admin/verify", requireAdmin, (req, res) => {
   res.json({ ok: true, message: "Admin autentifikatsiyasi muvaffaqiyatli" });
 });
 
-// Skin Endpoints
 app.get("/api/skins", async (req, res) => {
   try {
     res.json(await getSkins());
@@ -163,19 +182,9 @@ app.delete("/api/skins/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// Buyurtmalar Store (Orders)
 const orders = new Map();
 let nextOrderId = 1;
 
-async function tg(method, payload) {
-  return fetch(`${TG_API}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).then(r => r.json());
-}
-
-// Savat va yagona xaridlardan kelgan buyurtmalarni qabul qilish
 app.post("/api/order", async (req, res) => {
   const { product, price, tradeUrl, telegramUsername, telegramId, pubgId, fcAccount } = req.body || {};
   if (!product || !price) return res.status(400).json({ error: "product va price shart" });
@@ -190,7 +199,6 @@ app.post("/api/order", async (req, res) => {
   if (pubgId) deliveryLines += `\n🪙 PUBG Player ID: ${pubgId}`;
   if (fcAccount) deliveryLines += `\n⚽ EA / FC Akkaunt (Login & Parol / ID): ${fcAccount}`;
 
-  // Admin Telegram Botiga bildirishnoma yuborish
   await tg("sendMessage", {
     chat_id: ADMIN_CHAT_ID,
     text: `🆕 <b>YANGI BUYURTMA #${id}</b>\n\n<b>Mahsulot(lar):</b>\n${product}\n\n<b>Jami Narxi:</b> ${price}${deliveryLines}\n\nXaridor to'lov qilganini tasdiqladi. To'lovni tekshiring:`,
@@ -212,7 +220,12 @@ app.get("/api/order/:id", (req, res) => {
   res.json(order);
 });
 
-// Telegram Bot Webhook
+// Asosiy sahifa tekshirish uchun
+app.get("/", (req, res) => {
+  res.send("AZA Market Serveri ishlab turibdi!");
+});
+
+// Telegram Webhook
 let addFlow = null;
 let lastList = [];
 
@@ -259,31 +272,40 @@ app.post("/webhook", async (req, res) => {
   const chatId = msg.chat.id;
   const text = (msg.text || "").trim();
 
-  // 2. FOYDALANUVCHILAR UCHUN: /isbot buyrug'i
+  // 2. /isbot BUYRUG'I (Barcha foydalanuvchilar uchun)
   if (text === "/isbot") {
-    try {
-      const mediaGroup = ISBOT_PHOTOS.map((url, index) => ({
-        type: "photo",
-        media: url,
-        caption: index === 0 ? ISBOT_CAPTION : undefined,
-      }));
+    console.log(`[BOT] ${chatId} dan /isbot so'rovi qabul qilindi`);
+    const mediaGroup = ISBOT_PHOTOS.map((url, index) => ({
+      type: "photo",
+      media: url,
+      caption: index === 0 ? ISBOT_CAPTION : undefined,
+    }));
 
-      await tg("sendMediaGroup", {
-        chat_id: chatId,
-        media: mediaGroup,
-      });
-    } catch (e) {
-      console.error("Isbot yuborishda xatolik:", e);
+    const result = await tg("sendMediaGroup", {
+      chat_id: chatId,
+      media: mediaGroup,
+    });
+
+    if (!result || !result.ok) {
+      // Agar rasmlarni albom qilib yuklashda xatolik bo'lsa, oddiy matn tarzida jo'natadi
       await tg("sendMessage", {
         chat_id: chatId,
-        text: "Rasmlarni yuklashda xatolik yuz berdi.",
+        text: ISBOT_CAPTION,
       });
     }
     return res.sendStatus(200);
   }
 
-  // 3. ADMIN UCHUN TEKSHIRUV
-  if (String(chatId) !== ADMIN_CHAT_ID) return res.sendStatus(200);
+  // 3. ADMIN UCHUN BUYRUQLAR
+  if (String(chatId) !== ADMIN_CHAT_ID) {
+    if (text === "/start") {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: "Assalomu alaykum! Isbotlarni ko'rish uchun /isbot buyrug'ini yuboring.",
+      });
+    }
+    return res.sendStatus(200);
+  }
 
   async function send(t) {
     await tg("sendMessage", { chat_id: ADMIN_CHAT_ID, text: t });
@@ -300,7 +322,7 @@ app.post("/webhook", async (req, res) => {
       if (addFlow.step === "weapon") {
         addFlow.weapon = text;
         addFlow.step = "name";
-        await send("Nomi yoki turini yozing (masalan: Redline, Dreams Case, The Verkkars):");
+        await send("Nomi yoki turini yozing (masalan: Redline, Dreams Case):");
         return res.sendStatus(200);
       }
       if (addFlow.step === "name") {
@@ -338,53 +360,51 @@ app.post("/webhook", async (req, res) => {
         addFlow.image = imgUrl;
 
         const created = await addSkin(addFlow);
-        await send(`✅ Yangi buyum bazaga qo'shildi!\n\nID: ${created.id}\nBuyum: ${created.weapon} | ${created.name}\nNarxi: ${created.price}`);
+        await send(`✅ Yangi buyum qo'shildi!\nID: ${created.id}\nNomi: ${created.weapon} | ${created.name}`);
         addFlow = null;
         return res.sendStatus(200);
       }
     }
 
     if (text === "/start") {
-      await send("Salom! AZA Market Admin boti.\n\nBuyruqlar:\n/qoshish — Yangi buyum qo'shish\n/royxat — Barcha buyumlarni ko'rish\n/ochirish N — N-o'rindagi buyumni o'chirish\n/rasm N <link> — Rasmini yangilash\n/bekor — Amalni bekor qilish");
+      await send("Salom! AZA Market Admin boti.\n\n/qoshish — Buyum qo'shish\n/royxat — Barcha buyumlar\n/ochirish N — O'chirish");
     } else if (text === "/qoshish") {
       addFlow = { step: "weapon" };
-      await send("Yangi buyum qo'shish boshlandi.\nTurini yozing (masalan: AK-47, Glock-18, Case, Music Kit, Zeus):");
+      await send("Yangi buyum qo'shish boshlandi.\nTurini yozing:");
     } else if (text === "/royxat") {
       const skins = await getSkins();
       lastList = skins.map(s => s.id);
       if (!skins.length) {
-        await send("Market xozircha bo'sh.");
+        await send("Market bo'sh.");
       } else {
-        const lines = skins.map((s, i) => `${i + 1}. ${s.weapon} | ${s.name} — ${s.price} [${s.rarity}]`);
-        await send("Joriy buyumlar ro'yxati:\n\n" + lines.join("\n") + "\n\nO'chirish uchun: /ochirish <tartib_raqam>");
+        const lines = skins.map((s, i) => `${i + 1}. ${s.weapon} | ${s.name} — ${s.price}`);
+        await send("Joriy buyumlar:\n\n" + lines.join("\n"));
       }
     } else if (text.startsWith("/ochirish")) {
       const n = parseInt(text.split(" ")[1], 10);
       const id = lastList[n - 1];
       if (!id) {
-        await send("Avval /royxat buyrug'ini yuboring va tartib raqamni aniqlang.");
+        await send("Avval /royxat buyrug'ini bering.");
       } else {
         await deleteSkinById(id);
-        await send(`Muvaffaqiyatli o'chirildi: #${n}`);
-      }
-    } else if (text.startsWith("/rasm")) {
-      const parts = text.split(" ");
-      const n = parseInt(parts[1], 10);
-      const url = parts.slice(2).join(" ").trim();
-      const id = lastList[n - 1];
-      if (!id || !url) {
-        await send("Format: /rasm <tartib_raqam> <rasm_havolasi>");
-      } else {
-        const updated = await updateSkinById(id, { image: url });
-        await send(`Rasm yangilandi: #${n} — ${updated.weapon} | ${updated.name}`);
+        await send(`O'chirildi: #${n}`);
       }
     }
   } catch (e) {
-    await send("Xatolik yuz berdi: " + e.message);
+    await send("Xatolik: " + e.message);
   }
 
   res.sendStatus(200);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`AZA Server ${PORT}-portda ishlamoqda`));
+
+// Server ishga tushganda avtomatik Webhook'ni ulaydi
+app.listen(PORT, async () => {
+  console.log(`AZA Server ${PORT}-portda ishlamoqda`);
+  
+  // Telegram Webhook avtomatik sozlash
+  const webhookUrl = `${RENDER_URL}/webhook`;
+  const setHookRes = await tg("setWebhook", { url: webhookUrl });
+  console.log("Telegram Webhook natijasi:", setHookRes);
+});
